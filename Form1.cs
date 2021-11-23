@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.ComponentModel;
@@ -156,6 +156,7 @@ namespace LabCalculator
         {
             int cur_row = e.RowIndex,
                 cur_col = e.ColumnIndex;
+            values[cur_row][cur_col].Exp = dataGridView1.CurrentCell.Value.ToString();
             ReCalculate(cur_row, cur_col);
         }
 
@@ -255,7 +256,7 @@ namespace LabCalculator
 
 
 
-        public string AddressAnalize(int rowIndex, int colIndex) 
+        public string AddressAnalize(int rowIndex, int colIndex)  //changes address to value in cell expression
         {
             string expression = values[rowIndex][colIndex].Exp;
             for(int i = 1; i <= rows; i++)
@@ -266,6 +267,7 @@ namespace LabCalculator
                     if (expression.Contains(name))
                     {
                         expression = expression.Replace(name, values[i - 1][j].Val.ToString());
+                        values[i - 1][j].AddDependCell(rowIndex, colIndex);
                     }
                 }
             }
@@ -291,9 +293,8 @@ namespace LabCalculator
                 return true;
             }
         }
-        public void ReCalculate(int cur_row,int cur_col)
+        public void ReCalculate(int cur_row, int cur_col) //calculates cell value
         {
-            values[cur_row][cur_col].Exp = dataGridView1.CurrentCell.Value.ToString();
             if (!ReckurCheck(cur_row, cur_col))
             {
                 string expression = AddressAnalize(cur_row, cur_col);
@@ -301,9 +302,32 @@ namespace LabCalculator
                 cell.Exp = expression;
                 cell.Recalculate();
                 values[cur_row][cur_col].Val = cell.Val;
-                dataGridView1.CurrentCell.Value = values[cur_row][cur_col].Val.ToString();
+                dataGridView1.Rows[cur_row].Cells[cur_col].Value = values[cur_row][cur_col].Val.ToString();
+                List<int> depRow = values[cur_row][cur_col].DependsFromMeRows;
+                List<int> depCol = values[cur_row][cur_col].DependsFromMeColumns;
+                int l = depRow.Count();
+                if (l != 0)
+                {
+                    for(int i = 0; i < l; i++)
+                    {
+                        ReCalculate(depRow[i], depCol[i]);
+                    }
+                }
             }
         }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (DialogResult.Yes == MessageBox.Show("Ви впевнені, що хочете закрити файл?","", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation))
+            {
+
+            }
+            else
+            {
+                e.Cancel = true;
+            }
+        }
+
         public string ColName(int i)
         {
             const int alphabet = 26;
